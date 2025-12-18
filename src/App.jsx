@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { getAuth } from "firebase/auth";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { useEffect, useState } from "react";
+import { Box, CircularProgress } from "@mui/material";
 
 // Pages
 import Dashboard from "./pages/Dashboard";
@@ -16,19 +17,41 @@ import AddProduct from "./pages/AddProduct";
 
 function App() {
   const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const auth = getAuth();
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((currentUser) => setUser(currentUser));
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setAuthLoading(false); // 🔑 penting
+    });
+
     return () => unsubscribe();
   }, [auth]);
+
+  // 🔄 Loading screen saat cek auth
+  if (authLoading) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "linear-gradient(135deg, #FF6B6B, #FF3D3D)",
+        }}
+      >
+        <CircularProgress size={60} sx={{ color: "#fff" }} />
+      </Box>
+    );
+  }
 
   return (
     <Router>
       <Routes>
         {/* PUBLIC ROUTES */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
+        <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />
 
         {/* PROTECTED ROUTES */}
         {user ? (
